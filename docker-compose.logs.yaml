@@ -1,0 +1,31 @@
+name: forge-logs
+services:
+  loki:
+    image: grafana/loki:2.9.4
+    container_name: loki
+    restart: unless-stopped
+    ports:
+      - "3100:3100"
+    command: -config.file=/etc/loki/loki.yaml
+    volumes:
+      - ./loki/loki.yaml:/etc/loki/loki.yaml
+    networks:
+      - hs-network
+
+  fluent-bit:
+    image: cr.fluentbit.io/fluent/fluent-bit:2.2.2
+    container_name: fluent-bit
+    restart: unless-stopped
+    volumes:
+      - ./fluent-bit/fluent-bit.conf:/fluent-bit/etc/fluent-bit.conf
+      - ./fluent-bit/parsers.conf:/fluent-bit/etc/parsers.conf
+      - ./fluent-bit/scripts:/fluent-bit/scripts
+      - ./fluent-bit/sid_map.json:/fluent-bit/sid_map.json
+      - ./fluent-bit/logs:/var/log/demo
+    networks:
+      - hs-network
+
+networks:
+  hs-network:
+    external: true
+
