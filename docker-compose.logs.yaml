@@ -28,4 +28,3 @@ services:
 networks:
   hs-network:
     external: true
-
