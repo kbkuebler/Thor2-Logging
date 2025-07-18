@@ -1,26 +1,38 @@
-local sid_map = {}
+function cb_filter(tag, timestamp, record)
+    local sid_map_file = "/fluent-bit/scripts/sid_map.lua"
 
--- Load the sid_map.json once at startup
-local function load_sid_map()
-    local file = io.open("/fluent-bit/sid_map.json", "r")
-    if file then
-        local content = file:read("*a")
-        file:close()
-        sid_map = cjson.decode(content)
-    else
-        print("[sid_mapper] Failed to open sid_map.json")
+    -- Lazy load the sid_map
+    if not sid_map then
+        local ok, result = pcall(dofile, sid_map_file)
+        if ok and type(result) == "table" then
+            sid_map = result
+        else
+            print("[sid_mapper] Failed to load sid_map")
+            sid_map = {}
+        end
     end
-end
 
--- Load once at startup
-load_sid_map()
+    -- Skip substitution if already known
+    if record["created_by_name"] and record["created_by_name"] ~= "UNKNOWN" then
+        return 1, timestamp, record
+    end
 
-function sid_mapper(tag, timestamp, record)
-    local id = record["created_by_id"]
-    local typ = record["created_by_type"]
-
-    if id and typ == "USER" and sid_map[id] then
-        record["created_by_name"] = sid_map[id]
+    local created_by_id = record["created_by_id"]
+    if created_by_id and type(created_by_id) == "table" then
+        local uuid = created_by_id["uuid"]
+        local object_type = created_by_id["objectType"]
+        if object_type == "USER" and uuid then
+            local mapped_name = sid_map[uuid]
+            if mapped_name then
+                record["created_by_name"] = mapped_name
+            else
+                record["created_by_name"] = "UNKNOWN"
+            end
+        else
+            record["created_by_name"] = object_type or "UNKNOWN"
+        end
+    else
+        record["created_by_name"] = "UNKNOWN"
     end
 
     return 1, timestamp, record
