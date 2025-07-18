@@ -13,7 +13,8 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Python packages
-RUN pip3 install \
+
+RUN pip3 install --break-system-packages \
     requests \
     ujson
 
