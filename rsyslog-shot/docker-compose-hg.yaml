@@ -20,9 +20,10 @@ services:
     container_name: loki
     ports:
       - "3100:3100"
-    command: -config.file=/etc/loki/loki.yaml
     volumes:
       - ./loki.yaml:/etc/loki/loki.yaml
+      - ./loki-data:/loki
+    command: -config.file=/etc/loki/loki.yaml -config.expand-env=true
     networks:
       - hs-network
 
